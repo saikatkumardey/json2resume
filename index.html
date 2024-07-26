@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Resume Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap"
+        rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -13,9 +16,10 @@
             size: A4;
             margin: 0;
         }
+
         #resumeContent {
-            width: 210mm;
-            min-height: 297mm;
+            width: auto;
+            min-height: auto;
             padding: 20mm;
             margin: 0 auto;
             background: white;
@@ -23,16 +27,41 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans p-8">
-    <div class="max-w-4xl mx-auto">
+
+<body class="bg-gray-100 min-h-screen font-sans">
+    <h1 class="text-4xl font-bold text-center mx-0 px-0 mb-4 text-blue-600 p-4 rounded-lg shadow-lg">json2Resume</h1>
+    <div class="max-w-4xl mx-auto p-8">
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <div class="flex items-center mb-4">
                 <span class="material-icons text-blue-500 mr-2">description</span>
                 <label for="jsonFile" class="cursor-pointer text-blue-500 hover:text-blue-600">Choose JSON File</label>
                 <input type="file" id="jsonFile" accept=".json" class="hidden">
             </div>
-            
+
             <div class="flex items-center space-x-4 border-t pt-4">
+                <div class="flex items-center mb-4">
+                    <h3 class="text-lg font-semibold mr-4">Fonts</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center">
+                            <span class="material-icons">text_fields</span>
+                            <select id="bodyFont" class="border rounded ml-2">
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="material-icons">title</span>
+                            <select id="headingFont" class="border rounded ml-2">
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex items-center" title="Font Size">
                     <span class="material-icons">format_size</span>
                     <input type="number" id="fontSize" value="16" min="8" max="72" class="w-12 ml-1 p-1 border rounded">
@@ -52,9 +81,6 @@
                 <button id="boldBtn" class="font-bold" title="Bold">B</button>
                 <button id="italicBtn" class="italic" title="Italic">I</button>
                 <button id="underlineBtn" class="underline" title="Underline">U</button>
-                <button id="alignLeftBtn" title="Align Left"><span class="material-icons">format_align_left</span></button>
-                <button id="alignCenterBtn" title="Align Center"><span class="material-icons">format_align_center</span></button>
-                <button id="alignRightBtn" title="Align Right"><span class="material-icons">format_align_right</span></button>
             </div>
         </div>
 
@@ -67,15 +93,27 @@
     </div>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             let resumeData = null;
 
-            $('#jsonFile').on('change', function(e) {
+            function loadResumeFromLocalStorage() {
+                const storedResume = localStorage.getItem('resumeData');
+                if (storedResume) {
+                    resumeData = JSON.parse(storedResume);
+                    displayResume();
+                    $('#downloadPdf').show();
+                }
+            }
+
+            loadResumeFromLocalStorage();
+
+            $('#jsonFile').on('change', function (e) {
                 const file = e.target.files[0];
                 const reader = new FileReader();
 
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     resumeData = JSON.parse(e.target.result);
+                    localStorage.setItem('resumeData', JSON.stringify(resumeData)); // Store in local storage
                     displayResume();
                     $('#downloadPdf').show();
                 };
@@ -98,7 +136,8 @@
                     <h2 class="text-2xl font-bold mb-2">Work Experience</h2>
                     ${resumeData.work.map(job => `
                         <div class="mb-4">
-                            <h3 class="text-xl font-semibold">${job.position} at ${job.company}</h3>
+                            <h3 class="text-xl font-semibold">${job.position}</h3>
+                            <caption>${job.name}</caption>
                             <p>${job.startDate} - ${job.endDate}</p>
                             <p>${job.summary}</p>
                         </div>
@@ -110,9 +149,12 @@
                             <h3 class="text-xl font-semibold">${edu.studyType} in ${edu.area}</h3>
                             <p>${edu.institution}</p>
                             <p>${edu.startDate} - ${edu.endDate}</p>
+                            <p>${edu.score}</p>
+                            <p>${edu.courses.join(', ')}</p>
                         </div>
                     `).join('')}
 
+                    ${resumeData.skills.length > 0 ? '<div class="html2pdf__page-break"></div>' : ''}
                     <h2 class="text-2xl font-bold mb-2">Skills</h2>
                     <ul class="list-disc list-inside">
                         ${resumeData.skills.map(skill => `<li>${skill.name}: ${skill.keywords.join(', ')}</li>`).join('')}
@@ -128,72 +170,67 @@
                 const fontColor = $('#fontColor').val();
                 const bgColor = $('#bgColor').val();
                 const accentColor = $('#accentColor').val();
+                const bodyFont = $('#bodyFont').val();
+                const headingFont = $('#headingFont').val();
 
                 $('#resumeContent').css({
                     'font-size': fontSize,
                     'color': fontColor,
-                    'background-color': bgColor
+                    'background-color': bgColor,
+                    'font-family': bodyFont // Apply body font
                 });
 
-                $('#resumeContent h1, #resumeContent h2').css('color', accentColor);
+                $('#resumeContent h1, #resumeContent h2').css({
+                    'color': accentColor,
+                    'font-family': headingFont // Apply heading font
+                });
             }
+
+            $('#bodyFont, #headingFont').on('change', applyStyles);
 
             $('#fontSize').on('input', applyStyles);
 
-            $('#fontColorIcon').on('click', function() {
+            $('#fontColorIcon').on('click', function () {
                 $('#fontColor').click();
             });
 
-            $('#bgColorIcon').on('click', function() {
+            $('#bgColorIcon').on('click', function () {
                 $('#bgColor').click();
             });
 
-            $('#accentColorIcon').on('click', function() {
+            $('#accentColorIcon').on('click', function () {
                 $('#accentColor').click();
             });
 
             $('#fontColor, #bgColor, #accentColor').on('input', applyStyles);
 
-            $('#boldBtn').on('click', function() {
+            $('#boldBtn').on('click', function () {
                 document.execCommand('bold', false, null);
             });
 
-            $('#italicBtn').on('click', function() {
+            $('#italicBtn').on('click', function () {
                 document.execCommand('italic', false, null);
             });
 
-            $('#underlineBtn').on('click', function() {
+            $('#underlineBtn').on('click', function () {
                 document.execCommand('underline', false, null);
             });
 
-            $('#alignLeftBtn').on('click', function() {
-                document.execCommand('justifyLeft', false, null);
-            });
-
-            $('#alignCenterBtn').on('click', function() {
-                document.execCommand('justifyCenter', false, null);
-            });
-
-            $('#alignRightBtn').on('click', function() {
-                document.execCommand('justifyRight', false, null);
-            });
-
-            $('#downloadPdf').on('click', function() {
+            $('#downloadPdf').on('click', function () {
                 const element = document.getElementById('resumeContent');
                 const opt = {
                     margin: [0, 0, 0, 0],
                     filename: 'resume.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
                 };
 
                 html2pdf().set(opt).from(element).save();
             });
-
-            // Initially hide the download button
-            $('#downloadPdf').hide();
+            // $('#downloadPdf').hide();
         });
     </script>
 </body>
+
 </html>
