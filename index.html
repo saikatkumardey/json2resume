@@ -1,84 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Resume Generator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
-
-        body {
-            font-family: 'Roboto', sans-serif;
+        @page {
+            size: A4;
             margin: 0;
-            padding: 0;
         }
-
         #resumeContent {
-            width: 8.27in;
-            padding: 0.5in;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
             margin: 0 auto;
-            background-color: white;
-        }
-
-        @media print {
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            #resumeContent {
-                width: 100%;
-                padding: 0;
-            }
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
-
-<body class="bg-gray-100">
-    <div class="max-w-4xl mx-auto p-8">
-        <h1 class="text-3xl font-bold mb-4">JSON Resume Generator</h1>
-        <input type="file" class="button-primary rounded mb-4" id="jsonFile" accept=".json">
-        
-        <div class="mb-4">
-            <h2 class="text-xl font-semibold mb-2">Configuration</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label for="fontSize" class="block">Font Size:</label>
-                    <input type="number" id="fontSize" value="16" min="10" max="24" class="w-full">
+<body class="bg-gray-100 min-h-screen font-sans p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center mb-4">
+                <span class="material-icons text-blue-500 mr-2">description</span>
+                <label for="jsonFile" class="cursor-pointer text-blue-500 hover:text-blue-600">Choose JSON File</label>
+                <input type="file" id="jsonFile" accept=".json" class="hidden">
+            </div>
+            
+            <div class="flex items-center space-x-4 border-t pt-4">
+                <div class="flex items-center" title="Font Size">
+                    <span class="material-icons">format_size</span>
+                    <input type="number" id="fontSize" value="16" min="8" max="72" class="w-12 ml-1 p-1 border rounded">
                 </div>
-                <div>
-                    <label for="fontColor" class="block">Font Color:</label>
-                    <input type="color" id="fontColor" value="#000000" class="w-full">
+                <div class="flex items-center" title="Font Color">
+                    <span class="material-icons cursor-pointer" id="fontColorIcon">format_color_text</span>
+                    <input type="color" id="fontColor" value="#000000" class="hidden">
                 </div>
-                <div>
-                    <label for="backgroundColor" class="block">Background Color:</label>
-                    <input type="color" id="backgroundColor" value="#ffffff" class="w-full">
+                <div class="flex items-center" title="Background Color">
+                    <span class="material-icons cursor-pointer" id="bgColorIcon">format_color_fill</span>
+                    <input type="color" id="bgColor" value="#ffffff" class="hidden">
                 </div>
-                <div>
-                    <label for="accentColor" class="block">Accent Color:</label>
-                    <input type="color" id="accentColor" value="#3b82f6" class="w-full">
+                <div class="flex items-center" title="Accent Color">
+                    <span class="material-icons cursor-pointer" id="accentColorIcon">border_color</span>
+                    <input type="color" id="accentColor" value="#4285f4" class="hidden">
                 </div>
+                <button id="boldBtn" class="font-bold" title="Bold">B</button>
+                <button id="italicBtn" class="italic" title="Italic">I</button>
+                <button id="underlineBtn" class="underline" title="Underline">U</button>
+                <button id="alignLeftBtn" title="Align Left"><span class="material-icons">format_align_left</span></button>
+                <button id="alignCenterBtn" title="Align Center"><span class="material-icons">format_align_center</span></button>
+                <button id="alignRightBtn" title="Align Right"><span class="material-icons">format_align_right</span></button>
             </div>
         </div>
 
-        <button id="downloadPdf"
-            class="bg-blue-500 button-primary text-white px-4 py-2 rounded hover:bg-blue-600 hidden">Download
-            PDF</button>
+        <button id="downloadPdf" class="bg-blue-500 text-white px-4 py-2 rounded-full flex items-center mb-8 hidden">
+            <span class="material-icons mr-2">picture_as_pdf</span>
+            Download PDF
+        </button>
+
+        <div id="resumeContent" class="bg-white rounded-lg shadow-md p-8 mb-8"></div>
     </div>
-    <div id="resumeContent"></div>
 
     <script>
-        $(document).ready(function () {
+        $(document).ready(function() {
             let resumeData = null;
 
-            $('#jsonFile').on('change', function (e) {
+            $('#jsonFile').on('change', function(e) {
                 const file = e.target.files[0];
                 const reader = new FileReader();
 
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     resumeData = JSON.parse(e.target.result);
                     displayResume();
                     $('#downloadPdf').show();
@@ -87,97 +83,117 @@
                 reader.readAsText(file);
             });
 
-            function getConfig() {
-                return {
-                    fontSize: $('#fontSize').val() + 'px',
-                    fontColor: $('#fontColor').val(),
-                    backgroundColor: $('#backgroundColor').val(),
-                    accentColor: $('#accentColor').val()
-                };
-            }
-
             function displayResume() {
                 if (!resumeData) return;
 
-                const config = getConfig();
                 let html = `
-                    <h1 class="text-2xl font-bold mb-2">${resumeData.basics.name}</h1>
-                    <p class="text-gray-600 mb-2">${resumeData.basics.label}</p>
+                    <h1 class="text-3xl font-bold mb-2">${resumeData.basics.name}</h1>
+                    <p class="text-xl mb-2">${resumeData.basics.label}</p>
                     <p class="mb-2">${resumeData.basics.email} | ${resumeData.basics.phone}</p>
                     <p class="mb-4">${resumeData.basics.location.city}, ${resumeData.basics.location.region}</p>
 
-                    <div class="mb-4">
-                        <h2 class="text-xl font-semibold mb-2">Summary</h2>
-                        <p>${resumeData.basics.summary}</p>
-                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Summary</h2>
+                    <p class="mb-4">${resumeData.basics.summary}</p>
 
-                    <div class="mb-4">
-                        <h2 class="text-xl font-semibold mb-2">Work Experience</h2>
-                        ${resumeData.work.map(job => `
-                            <div class="mb-3">
-                                <h3 class="font-semibold">${job.position} at ${job.name}</h3>
-                                <p class="text-gray-600">${job.startDate} - ${job.endDate}</p>
-                                <p>${job.summary}</p>
-                            </div>
-                        `).join('')}
-                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Work Experience</h2>
+                    ${resumeData.work.map(job => `
+                        <div class="mb-4">
+                            <h3 class="text-xl font-semibold">${job.position} at ${job.company}</h3>
+                            <p>${job.startDate} - ${job.endDate}</p>
+                            <p>${job.summary}</p>
+                        </div>
+                    `).join('')}
 
-                    <div class="mb-4">
-                        <h2 class="text-xl font-semibold mb-2">Education</h2>
-                        ${resumeData.education.map(edu => `
-                            <div class="mb-3">
-                                <h3 class="font-semibold">${edu.studyType} in ${edu.area}</h3>
-                                <p>${edu.institution}</p>
-                                <p class="text-gray-600">${edu.startDate} - ${edu.endDate}</p>
-                            </div>
-                        `).join('')}
-                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Education</h2>
+                    ${resumeData.education.map(edu => `
+                        <div class="mb-4">
+                            <h3 class="text-xl font-semibold">${edu.studyType} in ${edu.area}</h3>
+                            <p>${edu.institution}</p>
+                            <p>${edu.startDate} - ${edu.endDate}</p>
+                        </div>
+                    `).join('')}
 
-                    <div>
-                        <h2 class="text-xl font-semibold mb-2">Skills</h2>
-                        ${resumeData.skills.map(skill => `
-                            <div class="mb-2">
-                                <h3 class="font-semibold">${skill.name}</h3>
-                                <p>${skill.keywords.join(', ')}</p>
-                            </div>
-                        `).join('')}
-                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Skills</h2>
+                    <ul class="list-disc list-inside">
+                        ${resumeData.skills.map(skill => `<li>${skill.name}: ${skill.keywords.join(', ')}</li>`).join('')}
+                    </ul>
                 `;
 
-                $('#resumeContent').html(html);
+                $('#resumeContent').html(html).attr('contenteditable', 'true');
                 applyStyles();
             }
 
             function applyStyles() {
-                const config = getConfig();
+                const fontSize = $('#fontSize').val() + 'px';
+                const fontColor = $('#fontColor').val();
+                const bgColor = $('#bgColor').val();
+                const accentColor = $('#accentColor').val();
+
                 $('#resumeContent').css({
-                    'font-size': config.fontSize,
-                    'color': config.fontColor,
-                    'background-color': config.backgroundColor
+                    'font-size': fontSize,
+                    'color': fontColor,
+                    'background-color': bgColor
                 });
-                $('#resumeContent h1, #resumeContent h2').css('color', config.accentColor);
+
+                $('#resumeContent h1, #resumeContent h2').css('color', accentColor);
             }
 
-            $('#downloadPdf').on('click', function () {
+            $('#fontSize').on('input', applyStyles);
+
+            $('#fontColorIcon').on('click', function() {
+                $('#fontColor').click();
+            });
+
+            $('#bgColorIcon').on('click', function() {
+                $('#bgColor').click();
+            });
+
+            $('#accentColorIcon').on('click', function() {
+                $('#accentColor').click();
+            });
+
+            $('#fontColor, #bgColor, #accentColor').on('input', applyStyles);
+
+            $('#boldBtn').on('click', function() {
+                document.execCommand('bold', false, null);
+            });
+
+            $('#italicBtn').on('click', function() {
+                document.execCommand('italic', false, null);
+            });
+
+            $('#underlineBtn').on('click', function() {
+                document.execCommand('underline', false, null);
+            });
+
+            $('#alignLeftBtn').on('click', function() {
+                document.execCommand('justifyLeft', false, null);
+            });
+
+            $('#alignCenterBtn').on('click', function() {
+                document.execCommand('justifyCenter', false, null);
+            });
+
+            $('#alignRightBtn').on('click', function() {
+                document.execCommand('justifyRight', false, null);
+            });
+
+            $('#downloadPdf').on('click', function() {
                 const element = document.getElementById('resumeContent');
                 const opt = {
-                    margin: [10, 10, 10, 10],
+                    margin: [0, 0, 0, 0],
                     filename: 'resume.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, logging: true },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
                 html2pdf().set(opt).from(element).save();
             });
 
-            // Re-apply styles when configuration changes
-            $('#fontSize, #fontColor, #backgroundColor, #accentColor').on('input', function() {
-                applyStyles();
-            });
+            // Initially hide the download button
+            $('#downloadPdf').hide();
         });
     </script>
 </body>
-
 </html>
